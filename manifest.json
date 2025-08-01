@@ -1,7 +1,6 @@
 {
   "name": "Poutch IPTV",
   "short_name": "Poutch",
-  "description": "Lecteur IPTV personnalisable",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#000000",
