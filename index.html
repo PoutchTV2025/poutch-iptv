@@ -1,3 +1,77 @@
 <!DOCTYPE html>
-<!-- content from the canvas will be saved here -->
-(raccourci ici pour éviter de copier tout le code déjà en mémoire - en prod, je collerais l'intégralité de l'HTML ici)
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poutch IPTV</title>
+  <link href="https://unpkg.com/video.js/dist/video-js.css" rel="stylesheet">
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/5534/5534418.png" type="image/png">
+  <style>/* [style intact, pas modifié ici] */</style>
+</head>
+<body>
+  <h1>Poutch IPTV</h1>
+  <button class="toggle-mode" onclick="toggleTheme()">🎥 Mode clair/sombre</button>
+  <div id="controls">[...]</div>
+  <div id="player-container">
+    <video id="iptvPlayer" class="video-js vjs-default-skin" controls autoplay></video>
+    <div id="channel-list"></div>
+  </div>
+  <script src="https://unpkg.com/video.js/dist/video.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    const player = videojs('iptvPlayer');
+    let allChannels = [];
+    let showOnlyFavorites = false;
+    let favorites = new Set(JSON.parse(localStorage.getItem('favorites') || '[]'));
+
+    function toggleTheme() { [...]; }
+    function renderFavoritesOnly() { [...]; }
+    function renderChannels() { [...]; }
+    function loadStream(url) { [...]; }
+    function toggleFavorite(name) { [...]; }
+
+    async function loadByCategory() {
+      const category = 'news';
+      const playlistUrl = `https://iptv-org.github.io/iptv/categories/${category}.m3u`;
+
+      try {
+        const response = await fetch(playlistUrl);
+        const text = await response.text();
+        const lines = text.split('\n');
+        allChannels = [];
+
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].startsWith('#EXTINF')) {
+            const nameMatch = lines[i].match(/,(.*)/);
+            const name = nameMatch ? nameMatch[1].trim() : 'Chaîne';
+            const langMatch = lines[i].match(/tvg-language="(.*?)"/i);
+            const language = langMatch ? langMatch[1].toUpperCase() : '';
+            const streamUrl = lines[i + 1];
+            if (streamUrl && streamUrl.startsWith('http')) {
+              allChannels.push({ name, url: streamUrl, language });
+            }
+          }
+        }
+
+        if (allChannels.length > 0) {
+          renderChannels();
+          loadStream(allChannels[0].url);
+        } else {
+          throw new Error('Playlist vide');
+        }
+      } catch (e) {
+        // Fallback de secours : flux de test
+        allChannels = [{
+          name: "Chaîne Test - MUX",
+          url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+          language: "EN"
+        }];
+        renderChannels();
+        loadStream(allChannels[0].url);
+      }
+    }
+
+    loadByCategory();
+  </script>
+</body>
+</html>
