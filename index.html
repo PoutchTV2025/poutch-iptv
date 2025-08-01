@@ -31,6 +31,14 @@
       text-align: center;
       padding: 10px;
     }
+    #filters {
+      margin: 10px auto;
+      text-align: center;
+    }
+    select {
+      padding: 5px;
+      margin: 0 5px;
+    }
     #player-container {
       width: 100%;
       max-width: 1400px;
@@ -60,7 +68,27 @@
 <body>
   <h1>Poutch IPTV</h1>
   <button class="toggle-mode" onclick="toggleTheme()">🎥 Mode clair/sombre</button>
-  <div id="controls"></div>
+  <div id="controls">
+    <div id="filters">
+      <label for="categoryFilter">Catégorie :</label>
+      <select id="categoryFilter" onchange="loadByCategory()">
+        <option value="news">News</option>
+        <option value="movies">Movies</option>
+        <option value="sports">Sports</option>
+        <option value="music">Music</option>
+        <option value="kids">Kids</option>
+        <option value="religious">Religious</option>
+        <option value="entertainment">Entertainment</option>
+        <option value="documentary">Documentary</option>
+        <option value="legislative">Legislative</option>
+      </select>
+      <label for="langFilter">Langue :</label>
+      <select id="langFilter" onchange="renderChannels()">
+        <option value="">Toutes</option>
+      </select>
+      <label><input type="checkbox" id="favoritesOnly" onchange="toggleFavoritesOnly()"> Favoris uniquement</label>
+    </div>
+  </div>
   <div id="player-container">
     <video id="iptvPlayer" class="video-js vjs-default-skin" controls autoplay></video>
     <div id="channel-list"></div>
@@ -84,10 +112,19 @@
       }
     }
 
+    function toggleFavoritesOnly() {
+      showOnlyFavorites = document.getElementById("favoritesOnly").checked;
+      renderChannels();
+    }
+
     function renderChannels() {
       const list = document.getElementById("channel-list");
       list.innerHTML = '';
-      const filtered = allChannels.filter(c => !showOnlyFavorites || favorites.has(c.name));
+      const selectedLang = document.getElementById("langFilter").value;
+      const filtered = allChannels.filter(c =>
+        (!showOnlyFavorites || favorites.has(c.name)) &&
+        (!selectedLang || c.language === selectedLang)
+      );
       filtered.forEach(channel => {
         const div = document.createElement('div');
         div.className = 'channel';
@@ -112,7 +149,7 @@
     }
 
     async function loadByCategory() {
-      const category = 'news';
+      const category = document.getElementById("categoryFilter").value;
       const playlistUrl = `https://iptv-org.github.io/iptv/categories/${category}.m3u`;
 
       try {
@@ -120,6 +157,7 @@
         const text = await response.text();
         const lines = text.split('\n');
         allChannels = [];
+        const langs = new Set();
 
         for (let i = 0; i < lines.length; i++) {
           if (lines[i].startsWith('#EXTINF')) {
@@ -127,12 +165,22 @@
             const name = nameMatch ? nameMatch[1].trim() : 'Chaîne';
             const langMatch = lines[i].match(/tvg-language="(.*?)"/i);
             const language = langMatch ? langMatch[1].toUpperCase() : '';
+            langs.add(language);
             const streamUrl = lines[i + 1];
             if (streamUrl && streamUrl.startsWith('http')) {
               allChannels.push({ name, url: streamUrl, language });
             }
           }
         }
+
+        const langFilter = document.getElementById("langFilter");
+        langFilter.innerHTML = '<option value="">Toutes</option>';
+        langs.forEach(lang => {
+          const opt = document.createElement("option");
+          opt.value = lang;
+          opt.textContent = lang;
+          langFilter.appendChild(opt);
+        });
 
         if (allChannels.length > 0) {
           renderChannels();
@@ -151,7 +199,7 @@
       }
     }
 
-    loadByCategory();
+    window.onload = loadByCategory;
   </script>
 </body>
 </html>
